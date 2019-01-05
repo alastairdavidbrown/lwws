@@ -1,5 +1,11 @@
 #define LISTEN_PORT 8080
-#define BIG 1024	//Asking for trouble
+#define LOGLEVEL 10
+#define BIG 1024      //Asking for trouble
+#define VERYBIG 65635 // asking fro bigger trouble
+#define PUBLICLOCATION "./public/"
+#define DEFAULTROOTFILE "index.html"
+
+#define LOGGER(l, fmt, ...) if(l<LOGLEVEL){printf("%s: ", getTime()); printf(fmt, __VA_ARGS__);}
 
 struct header{
   char * name;

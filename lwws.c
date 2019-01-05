@@ -10,31 +10,24 @@
 
 #include "lwws.h"
 
-#define LOGLEVEL 10
-#define BIG 1024	//Asking for trouble
-#define VERYBIG 65635 // asking fro bigger trouble
-#define PUBLICLOCATION "./public/"
-#define DEFAULTROOTFILE "index.html"
-
-#define LOGGER(l, fmt, ...) if(l<LOGLEVEL){printf("%s: ", getTime()); printf(fmt, __VA_ARGS__);}
-
 int main(int argv, char ** argc)
 {
 
   struct sockaddr_in name;
   int namelen = sizeof(name);
 
+  //Create socket
   int iSocket = socket(AF_INET, SOCK_STREAM, 0);
-
   handleReturn("socket", iSocket);
 
+  //bind it to an address
   name.sin_family = AF_INET;
   name.sin_port = htons (LISTEN_PORT);
   name.sin_addr.s_addr = htonl (INADDR_ANY);
-
   int iBind = bind (iSocket, (struct sockaddr *) &name, sizeof (name));
   handleReturn("bind", iBind);
 
+  // Listen for incoming
   int iListen = listen(iSocket,5);
   handleReturn("listen", iListen);
   LOGGER(1, "listening on port %d...\n\n", LISTEN_PORT);
@@ -43,12 +36,11 @@ int main(int argv, char ** argc)
   while (1)
   {
 
+    // Request Handler
     struct httpRequest req;
     struct httpResponse res;
-
     int iAccept = accept(iSocket,(struct sockaddr *)  &name,  (socklen_t*)&namelen);
     handleReturn("accept", iAccept);
-
     LOGGER(1, "request on port %d\n",  name.sin_port);
     char sr[VERYBIG]; // Shonky
     size_t r;
