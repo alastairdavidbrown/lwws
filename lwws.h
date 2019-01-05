@@ -2,28 +2,28 @@
 #define BIG 1024	//Asking for trouble
 
 struct header{
-    char * name;
-    char * value;
+  char * name;
+  char * value;
 };
 
 typedef struct httpRequest
 {
-    long requestId;
-    char * method;
-    char * resource;
-    char * httpVersion;
-    int numHeaders;
-    struct header * headers;
+  long requestId;
+  char * method;
+  char * resource;
+  char * httpVersion;
+  int numHeaders;
+  struct header * headers;
 }httpRequest;
 
 typedef struct httpResponse
 {
-    long responseId;
-    char * contentType;
-    long contentLength;
-    char * responseHeader;
-    char * responseBody;
-    char * response;
+  long responseId;
+  char * contentType;
+  long contentLength;
+  char * responseHeader;
+  char * responseBody;
+  char * response;
 
 } httpResponse;
 
