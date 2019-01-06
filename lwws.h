@@ -1,5 +1,5 @@
 #define LISTEN_PORT 8080
-#define LOGLEVEL 10
+#define LOGLEVEL 6
 #define BIG 1024      //Asking for trouble
 #define VERYBIG 65635 // asking fro bigger trouble
 #define PUBLICLOCATION "./public/"
@@ -35,6 +35,7 @@ typedef struct httpResponse
 
 int handleReturn(char * name, int i);
 int parseRequest(char * s, httpRequest * req);
-struct httpResponse getResource(char * r);
-struct httpResponse constructResponse(struct httpRequest req);
+int getResource(char * resourceName, httpResponse * res);
+int constructResponse(struct httpRequest req, httpResponse *  res);
+int freeReqRes(httpRequest * req, httpResponse * res);
 const char * getTime();

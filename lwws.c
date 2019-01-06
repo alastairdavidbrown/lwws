@@ -37,8 +37,8 @@ int main(int argv, char ** argc)
   {
 
     // Request Handler
-    struct httpRequest req;
-    struct httpResponse res;
+    httpRequest req;
+    httpResponse res;
     int iAccept = accept(iSocket,(struct sockaddr *)  &name,  (socklen_t*)&namelen);
     handleReturn("accept", iAccept);
     LOGGER(1, "request on port %d\n",  name.sin_port);
@@ -49,17 +49,22 @@ int main(int argv, char ** argc)
 
     int iParse = parseRequest(sr, &req);
     LOGGER(1,"parsed request method is %s:\n",req.method);
-    res = constructResponse(req);
+    int iConstructRespose = constructResponse(req, &res);
 
     LOGGER(1, "sending response...\n", NULL);
-    LOGGER(1, "... response %s\n", res.response);
-    LOGGER(1, "... responseBody %s\n", res.responseBody);
-    LOGGER(1, "... length %ld\n", strlen(res.response));
+    LOGGER(10, "... response %s\n", res.response);
+    LOGGER(10, "... responseBody %s\n", res.responseBody);
+    LOGGER(5, "... length %ld\n", strlen(res.response));
     int iSend = send (iAccept, res.response, strlen(res.response), MSG_OOB);
 
     handleReturn("send", iSend);
     int iClose = close(iAccept);
     handleReturn("close", iClose);
+
+    // Free memory
+    // int iFree = freeReqRes(&req, &res);
+    // handleReturn("freeMemory", iFree);\
+
   }
 
   return (true);
@@ -85,35 +90,38 @@ int handleReturn(char * name, int iReturn)
   }
 }
 
-struct httpResponse  getResource(char * r)
+int getResource(char * resourceName, httpResponse * res)
 {
   FILE * fp;
   char p[BIG];
   size_t s;
   char ch;
   int i = 0;
-  httpResponse res;
 
   strcpy (p,PUBLICLOCATION);
-  strcat (p, r);
-  LOGGER(10, "getResource: reading %s\n", p);
+  strcat (p, resourceName);
+  LOGGER(5, "getResource: reading %s\n", p);
 
 
   fp = fopen(p, "r");
   if (fp)
   {
-    res.responseBody = (char *) malloc(i+1);
+    fseek(fp, 0L, SEEK_END);
+    long sz = ftell(fp);
+    LOGGER(5, "getResource: file is %ld bytes\n", sz);
+    rewind(fp);
+    res->responseBody = (char *) malloc(sz);
     while((ch = fgetc(fp)) != EOF)
     {
-      res.responseBody[i]= ch;
+      res->responseBody[i]= ch;
       i++;
-      res.responseBody = realloc(res.responseBody, i+1);
     }
+    res->contentLength = sz;
     fclose (fp);
   }
   LOGGER(5, "getResource: responseBody i is %d\n", i);
-  LOGGER(5, "getResource: responseBody is %s\n", res.responseBody);
-  return (res); //shonky
+  LOGGER(10, "getResource: responseBody is %s\n", res->responseBody);
+  return (1); //shonky never returns anything except 1 ?!?
 
 }
 
@@ -149,21 +157,48 @@ int parseRequest(char * s, httpRequest * req)
   return (1);
 }
 
-struct httpResponse constructResponse(struct httpRequest req)
+int constructResponse(struct httpRequest req, httpResponse * res)
 {
-  struct httpResponse res;
 
   LOGGER(10, "constructResponse: about to get content %s\n", req.resource);
-  res = getResource(req.resource);
+  int iGetResouce = getResource(req.resource, res);
   LOGGER(10, "constructResponse: about to construct response from resource %s\n", req.resource);
-  LOGGER(10, "constructResponse: about to construct response from responseBody %s\n", res.responseBody);
-  LOGGER(10, "constructResponse: about to construct response lenght is %ld\n", strlen(res.responseBody));
+  LOGGER(10, "constructResponse: about to construct response from responseBody %s\n", res->responseBody);
+  LOGGER(10, "constructResponse: about to construct response lenght is %ld\n", res->contentLength);
 
-  res.response = (char *) malloc(10230);
+  res->response = (char *) malloc(10230);
   // WARNING - super shonky response is one char less than the stringlength becuase of the reader function
-  sprintf(res.response, "HTTP1.1 200 OK\nContent-Type: text/html\nContent-Length: %ld\n\n%s", (long) strlen(res.responseBody) - 1, res.responseBody);
+  sprintf(res->response, "HTTP1.1 200 OK\nContent-Type: text/html\nContent-Length: %ld\n\n%s", (long) strlen(res->responseBody) - 1, res->responseBody);
 
-  LOGGER(5, "constructed response %s\n", res.response);
-  return(res);
+  LOGGER(10, "constructed response %s\n", res->response);
+  return (1); // Super shonky never retrns anything other than 1
 
+}
+
+int initialiseReqRes(httpRequest * req, httpResponse * res)
+{
+
+    req->method = NULL;
+    req->resource = NULL;
+    req->httpVersion = NULL;
+
+    res->responseBody = NULL;
+    res->response = NULL;
+
+    return (1);  // Super shinky always returns 1
+}
+
+
+int freeReqRes(httpRequest * req, httpResponse * res)
+{
+
+    LOGGER(5, "freeReqRes:1", NULL)
+    if (req->method)free(req->method);
+    if (req->resource)free(req->resource);
+    if (req->httpVersion)free(req->httpVersion);
+
+    if (res->responseBody)free(res->responseBody);
+    if (res->response)free(res->response);
+
+    return (1);  // Super shinky always returns 1
 }
