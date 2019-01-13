@@ -10,6 +10,9 @@ test: $(OUTPUT)
 	# Really should put some tests here!
 	echo "Runing tests:"
 
+preprocess: $(src)
+	$(CC) -E $^ -o $^.preprocess
+
 $(OUTPUT): $(obj)
 	$(CC) -o $@ $^ $(LDFLAGS)
 	
