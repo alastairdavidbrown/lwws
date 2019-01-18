@@ -15,8 +15,13 @@ preprocess: $(src)
 
 $(OUTPUT): $(obj)
 	$(CC) -o $@ $^ $(LDFLAGS)
-	
 
-.PHONY: clean
+
 clean:
 	rm -f $(obj) $(OUTPOUT)
+
+clean-port:
+	sudo ifconfig en0 down
+	sudo ifconfig en0 up
+
+.PHONY: clean
