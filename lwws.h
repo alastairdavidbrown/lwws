@@ -2,7 +2,7 @@
 #define LOGLEVEL 11
 #define BIG 1024      //Asking for trouble
 #define VERYBIG 65635 // asking fro bigger trouble
-#define PUBLICLOCATION "./public/"
+#define PUBLICLOCATION "public"
 #define DEFAULTROOTFILE "index.html"
 
 #define RESP200STATUS "200 OK"
@@ -46,3 +46,4 @@ int constructResponse(struct httpRequest req, httpResponse *  res);
 int initialiseReqRes(httpRequest * req, httpResponse * res);
 int freeReqRes(httpRequest * req, httpResponse * res);
 const char * getTime();
+void sig_handler(int signo);
