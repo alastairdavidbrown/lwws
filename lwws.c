@@ -56,19 +56,24 @@ int main(int argv, char ** argc)
     r = recv (iAccept, (void *) sr, VERYBIG, 0); /* DANGER */
     handleReturn("recv", r);
     int i = parseRequest(sr, &req);
+
     int iConstructRespose = constructResponse(req, &res);
+    //int iConstructRespose = spoofResponse(req, &res);
 
     LOGGER(1, "sending response...\n", NULL);
-    LOGGER(5, "... length %ld\n", res.contentLength);
-    int iSend = send (iAccept, res.response, strlen(res.response) , MSG_OOB);
+    LOGGER(5, "... header length %ld\n", res.headerLength);
+    LOGGER(5, "... content length %ld\n", res.contentLength);
+    LOGGER(5, "... payload length %ld\n", res.headerLength + res.contentLength);
+    LOGGER(10, "... response %s\n", res.response );
 
+    int iSend = send (iAccept, res.response, (res.headerLength + res.contentLength + 1) , MSG_OOB);
     handleReturn("send", iSend);
     int iClose = close(iAccept);
     handleReturn("close", iClose);
 
     // Free memory
     int iFreeReqRes = freeReqRes(&req, &res);
-    handleReturn("freeMemory", iFreeReqRes);\
+    handleReturn("freeMemory", iFreeReqRes);
     free(sr);
   }
 
@@ -86,7 +91,7 @@ const char * getTime()
 
 int handleReturn(char * name, int iReturn)
 {
-  LOGGER(1, "%s: return is %d, errno is %d\n", name, iReturn, errno);
+  LOGGER(1, "%s: return is %d, errno is %d: %s\n", name, iReturn, errno, strerror(errno));
   if (iReturn < 0  )
   {
     exit (-1);
@@ -108,7 +113,8 @@ int getResource(char * resourceName, httpResponse * res)
 
   LOGGER(10, "request file :%s:\n", p);
 
-  fp = fopen("public/index.html", "r");
+  //fp = fopen("public/index.html", "r");
+  fp = fopen(p, "r");
   LOGGER(10, "fopen %p\n", fp);
   fclose (fp);
 
@@ -126,9 +132,19 @@ int getResource(char * resourceName, httpResponse * res)
       i++;
     }
     res->contentLength = sz;
+    LOGGER(10, "getResource: res->contentLength = %ld\n", res->contentLength);
+
     res->status = (char *) malloc(sizeof(RESP200STATUS)); // HURL
     res->status = RESP200STATUS;
     fclose (fp);
+    FILE * dfp = fopen("Content.out", "rw+");
+    int wret;
+    if (dfp){
+      wret =  fwrite(res->responseBody,1, res->contentLength, dfp);
+      LOGGER (10, "write returns %d\n",wret);
+      fclose(dfp);
+      LOGGER(10, "Caching %ld bytes of content to disk\n", res->contentLength);
+    }
   }else{
     LOGGER(10, "Cant find %s\n", p);
     res->responseBody = (char *) malloc(strlen(RESP404MESSAGE));
@@ -139,6 +155,29 @@ int getResource(char * resourceName, httpResponse * res)
 
 }
 
+// Guaranteed valid response
+int spoofResponse(struct httpRequest req, httpResponse * res)
+{
+  #define SPOOF_BODY_LEN 62
+
+  #define SPOOF_HEADERS "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: 62\n\n"
+  #define SPOOF_BODY "<html><head></head><body><h1>Spoof Response</h1></body></html>"
+
+  LOGGER(10, "spoofResponse: ******* Spoofing response, request is %s\n", req.resource);
+  res->response = (char *) malloc(VERYBIG); // just been sick
+  res->headerLength = sprintf(res->response, SPOOF_HEADERS);
+
+  // WARNING - super shonky response is one char less than the stringlength becuase of the reader function
+  //res->headerLength = sprintf(res->response, "HTTP1.1 %s\nContent-Type: text/html\nContent-Length: %ld\n\n",  res->status, (long) (res->contentLength ));
+  res->headerLength = strlen(SPOOF_HEADERS);
+  res->contentLength = SPOOF_BODY_LEN;
+
+  memcpy(res->response+res->headerLength, SPOOF_BODY, SPOOF_BODY_LEN);
+  LOGGER(10, "spoofResponse: ******* Spoofing response, response is %s\n", res->response);
+
+  return (1); // Super shonky never retrns anything other than 1
+
+}
 
 int constructResponse(struct httpRequest req, httpResponse * res)
 {
@@ -147,10 +186,9 @@ int constructResponse(struct httpRequest req, httpResponse * res)
   int iGetResouce = getResource(req.resource, res);
   res->response = (char *) malloc(VERYBIG); // just been sick
   // WARNING - super shonky response is one char less than the stringlength becuase of the reader function
-  sprintf(res->response, "HTTP1.1 %s\nContent-Type: text/html\nContent-Length: %ld\n\n%s",  res->status, (long) strlen(res->responseBody) - 1, res->responseBody);
-  //sprintf(res->response, "HTTP1.1 %s\nContent-Type: image/png\nContent-Length: %ld\n\n%s",  res->status, (long) res->contentLength-1, res->responseBody);
-  //sprintf(res->response, "HTTP1.1 %s\nContent-Type: text/html\nContent-Length: %ld\n\n%s",  res->status, (long) res->contentLength, res->responseBody);
-
+  //res->headerLength = sprintf(res->response, "HTTP1.1 %s\nContent-Type: text/html\nContent-Length: %ld\n\n",  res->status, (long) (res->contentLength ));
+  res->headerLength = sprintf(res->response, "HTTP/1.1 %s\nContent-Type: text/html\nContent-Length: %ld\n\n",  res->status, (long) (res->contentLength ));
+  memcpy(res->response+res->headerLength, res->responseBody, res->contentLength);
   return (1); // Super shonky never retrns anything other than 1
 
 }
