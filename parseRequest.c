@@ -5,7 +5,6 @@
 
 
 int parseRequest(char * s, httpRequest * req)
-//int parseRequest2()
 {
 	int iNoHeaders;
 	const char *dSpace = " ";
@@ -15,16 +14,11 @@ int parseRequest(char * s, httpRequest * req)
 	char * l = malloc(BIG);
 
 
-
 	//strtok ammends the first paramter so pass a pointer (declaration was immutable char array)
 	l = strtok(s, dNewLine);
-	LOGGER(10,"...first line is %s\n", l);
-
-
 	t = strtok(l, " ");
 	req->method = (char*) malloc(BIG);
   sprintf(req->method, "%s", t);
-	//LOGGER(9, "req->method (value):%s:\n", (char *) req->method);
 
 	t = strtok(NULL," ");
 	req->resource  = (char*) malloc(BIG);
@@ -47,6 +41,6 @@ int parseRequest(char * s, httpRequest * req)
     req->httpVersion);
 
 	free(t);
+	free(l);
 	return (1);
-
 }

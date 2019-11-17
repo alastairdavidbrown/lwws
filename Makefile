@@ -1,4 +1,4 @@
-src = $(wildcard *.c)
+src = $(wildcard *.c )
 obj = $(src:.c=.o)
 
 DEBUG = -g
@@ -13,12 +13,16 @@ test: $(OUTPUT)
 preprocess: $(src)
 	$(CC) -E $^ -o $^.preprocess
 
+tags: $(src)
+	ctags $^
+
 $(OUTPUT): $(obj)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 
 clean:
 	rm -f $(obj) $(OUTPOUT)
+	rm tags
 
 clean-port:
 	sudo ifconfig en0 down
