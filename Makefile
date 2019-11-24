@@ -22,7 +22,8 @@ $(OUTPUT): $(obj)
 
 clean:
 	rm -f $(obj) $(OUTPOUT)
-	rm tags
+	rm -f tags
+	rm -f $(OUTPUT)
 
 clean-port:
 	sudo ifconfig en0 down
