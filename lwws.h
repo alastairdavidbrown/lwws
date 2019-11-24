@@ -9,7 +9,6 @@
 #define RESP404STATUS "404 Not Found"
 #define RESP404MESSAGE "404: Not Found, it\'s not there man!"
 
-
 #define LOGGER(l, fmt, ...) if(l<LOGLEVEL){printf("%s:%s:%d:", getTime(), __FUNCTION__, __LINE__); printf(fmt, __VA_ARGS__);}
 //#define LOGGER(l, fmt, ...) 1==1;
 
@@ -49,4 +48,4 @@ int initialiseReqRes(httpRequest * req, httpResponse * res);
 int freeReqRes(httpRequest * req, httpResponse * res);
 const char * getTime();
 void sig_handler(int signo);
-int getResourceType(char * p, httpResponse * res);
+int setResourceType(char * p, httpResponse * res);

@@ -12,6 +12,7 @@
 #include "lwws.h"
 #include "parseRequest.h"
 #include "reportMemory.h"
+#include "getType.h"
 
 
 int main(int argv, char ** argc)
@@ -59,6 +60,7 @@ int main(int argv, char ** argc)
     int i = parseRequest(sr, &req);
 
     int iGetRes = getResource(req.resource, &res);
+    int isetResourceType = setResourceType(req.resource, &res);
     int iConstructRespose = constructResponse(req, &res);
 
     int iSend = send (iAccept, res.response, (res.headerLength + res.contentLength + 1) , MSG_OOB);
@@ -145,9 +147,21 @@ int getResource(char * resourceName, httpResponse * res)
 }
 
 // Worl out what the mime type is based on the extension, bit shonky
-int getResourceType(char * p, httpResponse * httpResponse)
+int setResourceType(char * p, httpResponse * res)
 {
-    LOGGER(10, "Establishing type for %s\n", p);
+    LOGGER(10, "...getting type for %s length is %ld\n", p, strlen(p));
+    char * sType = malloc(VERYBIG); // hurl (again)
+
+    // find the first dot from the end.
+    for(long l = strlen(p); l>=0 ; l--){
+      if (p[l] == '.') {
+        strcpy(sType, p+l+1);
+      }
+    }
+
+    LOGGER(10, "...type is %s\n", sType);
+    strcpy(res->contentType, getType(sType));
+    free(sType);
     return (1);
 }
 
@@ -157,7 +171,7 @@ int constructResponse(struct httpRequest req, httpResponse * res)
   res->response = (char *) malloc(VERYBIG); // just been sick
   // WARNING - super shonky response is one char less than the stringlength becuase of the reader function
   //res->headerLength = sprintf(res->response, "HTTP1.1 %s\nContent-Type: text/html\nContent-Length: %ld\n\n",  res->status, (long) (res->contentLength ));
-  res->headerLength = sprintf(res->response, "HTTP/1.1 %s\nContent-Type: text/html\nContent-Length: %ld\n\n",  res->status, (long) (res->contentLength ));
+  res->headerLength = sprintf(res->response, "HTTP/1.1 %s\nContent-Type: %s\nContent-Length: %ld\n\n",  res->status, (char *) res->contentType, (long) (res->contentLength ));
   memcpy(res->response+res->headerLength, res->responseBody, res->contentLength);
   return (1); // Super shonky never retrns anything other than 1
 }
