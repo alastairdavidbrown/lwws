@@ -14,6 +14,9 @@
 #include "reportMemory.h"
 #include "getType.h"
 
+// Use Consts properly
+// allocate and deallocate in the same place
+// pass immutable when appropriate
 
 int main(int argv, char ** argc)
 {
@@ -45,9 +48,9 @@ int main(int argv, char ** argc)
       LOGGER(2, "WARNING: can't catch SIGINT\n", NULL);
 
     // Request Handler
-    httpRequest req;
-    httpResponse res;
-    initialiseReqRes(&req,&res);
+    httpRequest * req = malloc (sizeof(httpRequest));
+    httpResponse * res = malloc (sizeof(httpResponse));
+    initialiseReqRes(req,res);
 
     int iAccept = accept(iSocket,(struct sockaddr *)  &name,  (socklen_t*)&namelen);
     handleReturn("accept", iAccept);
@@ -57,13 +60,13 @@ int main(int argv, char ** argc)
     size_t r;
     r = recv (iAccept, (void *) sr, VERYBIG, 0); /* DANGER */
     handleReturn("recv", r);
-    int i = parseRequest(sr, &req);
+    int i = parseRequest(sr, req);
 
-    int iGetRes = getResource(req.resource, &res);
-    int isetResourceType = setResourceType(req.resource, &res);
-    int iConstructRespose = constructResponse(req, &res);
+    int iGetRes = getResource(req->resource, res);
+    int isetResourceType = setResourceType(req->resource, res);
+    int iConstructRespose = constructResponse(req, res);
 
-    int iSend = send (iAccept, res.response, (res.headerLength + res.contentLength + 1) , MSG_OOB);
+    int iSend = send (iAccept, res->response, (res->headerLength + res->contentLength + 1) , MSG_OOB);
     handleReturn("send", iSend);
     LOGGER(1, "...sending response return %d\n", iSend);
 
@@ -74,9 +77,11 @@ int main(int argv, char ** argc)
     handleReturn("close", iClose);
 
     // Free memory
-    int iFreeReqRes = freeReqRes(&req, &res);
+    int iFreeReqRes = freeReqRes(req, res);
     handleReturn("freeMemory", iFreeReqRes);
-    //free(sr);
+    free (req);
+    free (res);
+    //free(sr); shouldnt bargh but does... meory leak
   }
 
   return (true);
@@ -150,23 +155,31 @@ int getResource(char * resourceName, httpResponse * res)
 int setResourceType(char * p, httpResponse * res)
 {
     LOGGER(10, "...getting type for %s length is %ld\n", p, strlen(p));
-    char * sType = malloc(VERYBIG); // hurl (again)
+    const char * sTypeExtension = malloc(VERYBIG); // hurl (again)
+    const char * sTypeDescription = malloc(VERYBIG);
+
 
     // find the first dot from the end.
     for(long l = strlen(p); l>=0 ; l--){
       if (p[l] == '.') {
-        strcpy(sType, p+l+1);
+        strcpy((char*) sTypeExtension, p+l+1);
       }
     }
 
-    LOGGER(10, "...type is %s\n", sType);
-    strcpy(res->contentType, getType(sType));
-    free(sType);
+    LOGGER(10, "...type is %s\n", sTypeExtension);
+    sTypeDescription = getType(sTypeExtension);
+    res->contentType = (char *) malloc(strlen(sTypeDescription) + 1);
+    strcpy(res->contentType, sTypeDescription);
+    free((char *) sTypeExtension);
+
+    // This barghs but shouldnt memory leak somewhere!!
+    //free(sTypeDescription);
+
     return (1);
 }
 
 // Construt the response
-int constructResponse(struct httpRequest req, httpResponse * res)
+int constructResponse(httpRequest * req, httpResponse * res)
 {
   res->response = (char *) malloc(VERYBIG); // just been sick
   // WARNING - super shonky response is one char less than the stringlength becuase of the reader function
@@ -179,10 +192,19 @@ int constructResponse(struct httpRequest req, httpResponse * res)
 // Initialise the request and response
 int initialiseReqRes(httpRequest * req, httpResponse * res)
 {
+    req = (httpRequest * ) malloc (sizeof (httpRequest));
+
     req->method = NULL;
     req->resource = NULL;
     req->httpVersion = NULL;
+    req->numHeaders = 0;
+    req->headers = NULL;
 
+    res = (httpResponse * ) malloc (sizeof (httpResponse));
+    res->headerLength = 0;
+    res->contentType = NULL;
+    res->contentLength = 0;
+    res->responseHeader = NULL;
     res->responseBody = NULL;
     res->response = NULL;
     res->status = NULL;

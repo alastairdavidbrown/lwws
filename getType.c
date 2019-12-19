@@ -17,7 +17,7 @@ const char * sTypes[][2] = {
     {DEFAULT,"text/html"} ,
 };
 
-const char * getType(char * sExtension)
+const char * getType(const char * sExtension)
 {
   LOGGER(10, "0,0 %s 0,1 %s 1,0 %s, 1,1 %s\n", sTypes[0][0], sTypes[0][1], sTypes[1][0], sTypes[1][1]);
   LOGGER(10, "...mapping extension %s to type\n", (char *) sExtension);

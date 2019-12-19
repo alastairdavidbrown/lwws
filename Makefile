@@ -16,6 +16,9 @@ preprocess: $(src)
 tags: $(src)
 	ctags $^
 
+$(obj): $(src)
+	$(CC) -c  $(DEBUG) $^
+
 $(OUTPUT): $(obj)
 	$(CC) -o $@ $^ $(LDFLAGS)
 

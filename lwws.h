@@ -20,7 +20,6 @@ struct header{
 
 typedef struct httpRequest
 {
-  long requestId;
   char * method;
   char * resource;
   char * httpVersion;
@@ -30,7 +29,6 @@ typedef struct httpRequest
 
 typedef struct httpResponse
 {
-  long responseId;
   long headerLength;
   char * contentType;
   long contentLength;
@@ -42,8 +40,8 @@ typedef struct httpResponse
 
 int handleReturn(char * name, int i);
 int getResource(char * resourceName, httpResponse * res);
-int constructResponse(struct httpRequest req, httpResponse *  res);
-int spoofResponse(struct httpRequest req, httpResponse *  res);
+int constructResponse(httpRequest * req, httpResponse * res);
+int spoofResponse(httpRequest * req, httpResponse *  res);
 int initialiseReqRes(httpRequest * req, httpResponse * res);
 int freeReqRes(httpRequest * req, httpResponse * res);
 const char * getTime();

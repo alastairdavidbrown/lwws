@@ -1,1 +1,1 @@
-const char * getType(char * sExtension);
+const char * getType(const char * sExtension);
