@@ -192,15 +192,12 @@ int constructResponse(httpRequest * req, httpResponse * res)
 // Initialise the request and response
 int initialiseReqRes(httpRequest * req, httpResponse * res)
 {
-    req = (httpRequest * ) malloc (sizeof (httpRequest));
-
     req->method = NULL;
     req->resource = NULL;
     req->httpVersion = NULL;
     req->numHeaders = 0;
     req->headers = NULL;
 
-    res = (httpResponse * ) malloc (sizeof (httpResponse));
     res->headerLength = 0;
     res->contentType = NULL;
     res->contentLength = 0;
