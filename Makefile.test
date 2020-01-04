@@ -1,0 +1,22 @@
+# lwws source and objects
+src = $(filter-out main.c, $(wildcard *.c))
+obj = $(src:.c=.o)
+target = test
+
+
+# tags!
+tags = .tags
+
+# compiler flags
+DEBUG = -g
+LDFLAGS = -L . -lc $(DEBUG)
+CC = cc
+
+$(target):  $(obj)
+	echo $(target)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(obj): $(src)
+	$(CC) -c  $(DEBUG) $^
+
+.PHONY: clean

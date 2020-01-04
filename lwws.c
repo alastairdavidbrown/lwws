@@ -9,16 +9,17 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "lwws.h"
+#include "httpRequest.h"
+#include "httpResponse.h"
 #include "parseRequest.h"
-#include "reportMemory.h"
 #include "getType.h"
+#include "lwws.h"
 
-// Use Consts properly
+// Use const properly
 // allocate and deallocate in the same place
 // pass immutable when appropriate
 
-int main(int argv, char ** argc)
+int lwws()
 {
 
   struct sockaddr_in name;
@@ -48,17 +49,17 @@ int main(int argv, char ** argc)
       LOGGER(2, "WARNING: can't catch SIGINT\n", NULL);
 
     // Request Handler
-    httpRequest * req = malloc (sizeof(httpRequest));
-    httpResponse * res = malloc (sizeof(httpResponse));
-    initialiseReqRes(req,res);
+    httpRequest * req = initialiseHttpRequest();
+    httpResponse * res = initialiseHttpResponse();
 
     int iAccept = accept(iSocket,(struct sockaddr *)  &name,  (socklen_t*)&namelen);
     handleReturn("accept", iAccept);
     LOGGER(1, "request on port %d\n",  name.sin_port);
 
-    char * sr = malloc(VERYBIG+1); // Shonky
+    //char * sr = malloc(VERYBIG+1); // Shonky
+    char sr[BUFFER_SIZE];
     size_t r;
-    r = recv (iAccept, (void *) sr, VERYBIG, 0); /* DANGER */
+    r = recv (iAccept, (void *) sr, BUFFER_SIZE, 0); /* DANGER */
     handleReturn("recv", r);
     int i = parseRequest(sr, req);
 
@@ -70,18 +71,16 @@ int main(int argv, char ** argc)
     handleReturn("send", iSend);
     LOGGER(1, "...sending response return %d\n", iSend);
 
-    // int iSend = send (iAccept, "HTTP/1.1 200\nContent-Type: text/html\nContent-Length: 62\n\n<html><head></head><body><h1>Spoof Response</h1></body></html>", (57 + 62 + 1) , MSG_OOB);
-    // handleReturn("send", iSend);
-
     int iClose = close(iAccept);
     handleReturn("close", iClose);
 
     // Free memory
-    int iFreeReqRes = freeReqRes(req, res);
-    handleReturn("freeMemory", iFreeReqRes);
-    free (req);
-    free (res);
-    //free(sr); shouldnt bargh but does... meory leak
+    dumpHttpResponse(res);
+    dumpHttpRequest(req);
+
+    freeHttpRequest(req);
+    freeHttpResponse(res);
+
   }
 
   return (true);
@@ -138,8 +137,8 @@ int getResource(char * resourceName, httpResponse * res)
     fclose (fp);
 
     // Set the repsonse status
-    res->status = (char *) malloc(sizeof(RESP200STATUS)); // HURL
-    memcpy(res->status, RESP200STATUS, sizeof(RESP200STATUS));
+    res->status = (char *) malloc(sizeof(RESP200STATUS) + 1); // HURL
+    strcpy(res->status, RESP200STATUS);
   }else{
     // Requested file does not exist
     LOGGER(10, "... can't find %s\n", p);
@@ -151,13 +150,12 @@ int getResource(char * resourceName, httpResponse * res)
 
 }
 
-// Worl out what the mime type is based on the extension, bit shonky
+// Work out what the mime type is based on the extension, bit shonky
 int setResourceType(char * p, httpResponse * res)
 {
     LOGGER(10, "...getting type for %s length is %ld\n", p, strlen(p));
-    const char * sTypeExtension = malloc(VERYBIG); // hurl (again)
-    const char * sTypeDescription = malloc(VERYBIG);
-
+    char * sTypeExtension = malloc(BIG); // hurl (again)
+    //char * sTypeDescription = malloc(BIG);
 
     // find the first dot from the end.
     for(long l = strlen(p); l>=0 ; l--){
@@ -167,12 +165,11 @@ int setResourceType(char * p, httpResponse * res)
     }
 
     LOGGER(10, "...type is %s\n", sTypeExtension);
-    sTypeDescription = getType(sTypeExtension);
+    char * sTypeDescription = getType(sTypeExtension);
     res->contentType = (char *) malloc(strlen(sTypeDescription) + 1);
+    LOGGER(10, "...description is %s\n", sTypeDescription);
     strcpy(res->contentType, sTypeDescription);
-    free((char *) sTypeExtension);
-
-    // This barghs but shouldnt memory leak somewhere!!
+    free(sTypeExtension);
     //free(sTypeDescription);
 
     return (1);
@@ -187,36 +184,6 @@ int constructResponse(httpRequest * req, httpResponse * res)
   res->headerLength = sprintf(res->response, "HTTP/1.1 %s\nContent-Type: %s\nContent-Length: %ld\n\n",  res->status, (char *) res->contentType, (long) (res->contentLength ));
   memcpy(res->response+res->headerLength, res->responseBody, res->contentLength);
   return (1); // Super shonky never retrns anything other than 1
-}
-
-// Initialise the request and response
-int initialiseReqRes(httpRequest * req, httpResponse * res)
-{
-    req->method = NULL;
-    req->resource = NULL;
-    req->httpVersion = NULL;
-    req->numHeaders = 0;
-    req->headers = NULL;
-
-    res->headerLength = 0;
-    res->contentType = NULL;
-    res->contentLength = 0;
-    res->responseHeader = NULL;
-    res->responseBody = NULL;
-    res->response = NULL;
-    res->status = NULL;
-
-    return (1);  // Super shinky always returns 1
-}
-
-
-// Free the memory allocated
-int freeReqRes(httpRequest * req, httpResponse * res)
-{
-    if (res->status)free(res->status);
-    if (res->responseBody)free(res->responseBody);
-    if (res->response)free(res->response);
-    return (1);  // Super shinky always returns 1
 }
 
 // Handle signals

@@ -1,32 +1,40 @@
-src = $(wildcard *.c )
+# lwws source and objects
+src = $(filter-out test.c, $(wildcard *.c))
 obj = $(src:.c=.o)
+lwws = lwws
 
+#
+
+# tags!
+tags = .tags
+
+# compiler flags
 DEBUG = -g
 LDFLAGS = -L . -lc $(DEBUG)
 CC = cc
-OUTPUT = lwws
 
-test: $(OUTPUT)
-	# Really should put some tests here!
-	echo "Runing tests:"
-
-preprocess: $(src)
-	$(CC) -E $^ -o $^.preprocess
-
-tags: $(src)
-	ctags $^
+# lwws
+$(lwws): $(obj)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(obj): $(src)
 	$(CC) -c  $(DEBUG) $^
 
-$(OUTPUT): $(obj)
-	$(CC) -o $@ $^ $(LDFLAGS)
+# expand symbols
+preprocess: $(src)
+	$(CC) -E $(CFLAGS) $< -o all.$@
 
+# tags for code navigation in editor
+$(tags): $(src)
+	ctags -f $(tags) -a $^
 
 clean:
 	rm -f $(obj) $(OUTPOUT)
-	rm -f tags
-	rm -f $(OUTPUT)
+	rm -f $(tags)
+	rm -f $(lwws)
+	rm -f *.preprocess
+	rm test
+	rm test.o
 
 clean-port:
 	sudo ifconfig en0 down
